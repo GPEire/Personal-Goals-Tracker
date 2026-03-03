@@ -1,14 +1,15 @@
 # Frontend (PWA React + Vite)
 
-## Run locally
+## Run locally (UI-only)
 
 ```bash
 npm install
 npm run dev
 ```
 
-Set backend URL if needed:
+Open the printed local URL (usually `http://localhost:5173`).
 
-```bash
-VITE_API_BASE_URL=http://localhost:8000
-```
+This iteration is intentionally UI-only:
+- No login flow
+- No backend required
+- No database required

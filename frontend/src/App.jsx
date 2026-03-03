@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
-import { apiRequest } from './api'
+import { useMemo, useState } from 'react'
 import { Tabs } from './components/Tabs'
 
 const emptyGoal = {
@@ -11,119 +10,47 @@ const emptyGoal = {
   description: ''
 }
 
+const starterGoals = [
+  { id: 1, title: 'Morning walk', type: 'habit', frequency: 'daily', is_active: true },
+  { id: 2, title: 'Read 10 pages', type: 'habit', frequency: 'daily', is_active: true }
+]
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('Today')
-  const [email, setEmail] = useState('')
-  const [tokenInput, setTokenInput] = useState('')
-  const [devToken, setDevToken] = useState('')
-  const [goals, setGoals] = useState([])
+  const [goals, setGoals] = useState(starterGoals)
   const [form, setForm] = useState(emptyGoal)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  const isAuthed = Boolean(localStorage.getItem('auth_token'))
 
   const todayGoals = useMemo(() => goals.filter(goal => goal.is_active), [goals])
 
-  async function loadGoals() {
-    setLoading(true)
-    setError('')
-    try {
-      const data = await apiRequest('/goals')
-      setGoals(data)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
+  function deleteGoal(goalId) {
+    setGoals(current => current.filter(goal => goal.id !== goalId))
   }
 
-  useEffect(() => {
-    if (isAuthed) {
-      loadGoals()
-    }
-  }, [isAuthed])
-
-  async function requestMagicLink(event) {
+  function createGoal(event) {
     event.preventDefault()
-    setError('')
-    const data = await apiRequest('/auth/request-link', {
-      method: 'POST',
-      body: JSON.stringify({ email })
-    })
-    setDevToken(data.message.split(': ').at(-1) || '')
-  }
 
-  async function verifyToken(event) {
-    event.preventDefault()
-    setError('')
-    try {
-      const data = await apiRequest('/auth/verify', {
-        method: 'POST',
-        body: JSON.stringify({ email, token: tokenInput })
-      })
-      localStorage.setItem('auth_token', data.access_token)
-      await loadGoals()
-    } catch (err) {
-      setError(err.message)
+    const nextGoal = {
+      id: Date.now(),
+      title: form.title,
+      type: form.type,
+      frequency: form.frequency,
+      target_value: form.target_value ? Number(form.target_value) : null,
+      reminder_times: form.reminder_times
+        .split(',')
+        .map(time => time.trim())
+        .filter(Boolean),
+      description: form.description,
+      is_active: true
     }
-  }
 
-
-  async function deleteGoal(goalId) {
-    setError('')
-    try {
-      await apiRequest(`/goals/${goalId}`, { method: 'DELETE' })
-      await loadGoals()
-    } catch (err) {
-      setError(err.message)
-    }
-  }
-
-  async function createGoal(event) {
-    event.preventDefault()
-    setError('')
-    try {
-      await apiRequest('/goals', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...form,
-          target_value: form.target_value ? Number(form.target_value) : null,
-          reminder_times: form.reminder_times
-            .split(',')
-            .map(time => time.trim())
-            .filter(Boolean)
-        })
-      })
-      setForm(emptyGoal)
-      await loadGoals()
-    } catch (err) {
-      setError(err.message)
-    }
-  }
-
-  if (!isAuthed) {
-    return (
-      <main className="container">
-        <h1>Personal Resolution Tracker</h1>
-        <p>Sign in with a magic link to manage your goals.</p>
-        <form onSubmit={requestMagicLink} className="card">
-          <input required type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
-          <button type="submit">Request link</button>
-        </form>
-        <form onSubmit={verifyToken} className="card">
-          <input required placeholder="Paste token" value={tokenInput} onChange={e => setTokenInput(e.target.value)} />
-          <button type="submit">Verify</button>
-        </form>
-        {devToken && <p className="hint">Dev token: {devToken}</p>}
-        {error && <p className="error">{error}</p>}
-      </main>
-    )
+    setGoals(current => [nextGoal, ...current])
+    setForm(emptyGoal)
   }
 
   return (
     <main className="container">
       <h1>Personal Resolution Tracker</h1>
+      <p className="hint">UI-only iteration: no login, backend, or database required.</p>
       <Tabs activeTab={activeTab} onChange={setActiveTab} />
 
       {activeTab === 'Today' && (
@@ -153,7 +80,14 @@ export default function App() {
 
           <section className="card">
             <h2>Goal List</h2>
-            {loading ? <p>Loading...</p> : <ul>{goals.map(goal => <li key={goal.id}>{goal.title} · {goal.frequency} <button onClick={() => deleteGoal(goal.id)}>Delete</button></li>)}</ul>}
+            <ul>
+              {goals.map(goal => (
+                <li key={goal.id}>
+                  {goal.title} · {goal.frequency} <button onClick={() => deleteGoal(goal.id)}>Delete</button>
+                </li>
+              ))}
+            </ul>
+            {!goals.length && <p>No goals yet. Add your first one above.</p>}
           </section>
         </>
       )}
@@ -161,11 +95,9 @@ export default function App() {
       {activeTab === 'History' && (
         <section className="card">
           <h2>History</h2>
-          <p>History logging ships in Iteration 2.</p>
+          <p>History and progress analytics will return in a later iteration.</p>
         </section>
       )}
-
-      {error && <p className="error">{error}</p>}
     </main>
   )
 }
