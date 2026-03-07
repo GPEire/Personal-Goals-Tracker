@@ -16,4 +16,5 @@ uvicorn app.main:app --reload
 - Goal CRUD (`/goals`)
 - Goal logs (`POST /logs`, `GET /logs?week_start=YYYY-MM-DD`)
 - Weekly progress summaries (`GET /progress/weekly?week_start=YYYY-MM-DD`)
+- Weekly progress observability metrics (`GET /health/metrics`)
 - Postgres schema via Alembic migration
