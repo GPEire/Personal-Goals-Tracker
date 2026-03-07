@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { authApi, goalsApi, logsApi, progressApi } from './api'
-import { getStatusBadge, getWeekStartISO, isMetricGoal, summarizeGoals } from './utils/progress'
+import {
+  getGoalGuidance,
+  getStatusBadge,
+  getStatusContext,
+  getWeekSelectorOptions,
+  getWeekStartISO,
+  isMetricGoal,
+  summarizeGoals
+} from './utils/progress'
 
 function AuthPanel({ onAuthenticated }) {
   const [email, setEmail] = useState('')
@@ -55,13 +63,18 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const weekStart = useMemo(() => getWeekStartISO(), [])
+  const weekOptions = useMemo(() => getWeekSelectorOptions(), [])
+  const [weekStart, setWeekStart] = useState(() => getWeekStartISO())
 
-  const refreshData = async () => {
+  const refreshData = async selectedWeekStart => {
     try {
       setLoading(true)
       setError('')
-      const [goalData, progressData, logData] = await Promise.all([goalsApi.list(), progressApi.weekly(weekStart), logsApi.listForWeek(weekStart)])
+      const [goalData, progressData, logData] = await Promise.all([
+        goalsApi.list(),
+        progressApi.weekly(selectedWeekStart),
+        logsApi.listForWeek(selectedWeekStart)
+      ])
       setGoals(goalData)
       setProgress(progressData)
       setLogs(logData)
@@ -74,9 +87,9 @@ export default function App() {
 
   useEffect(() => {
     if (isAuthed) {
-      refreshData()
+      refreshData(weekStart)
     }
-  }, [isAuthed])
+  }, [isAuthed, weekStart])
 
   const progressByGoal = useMemo(() => {
     const entries = progress?.goals ?? []
@@ -84,6 +97,7 @@ export default function App() {
   }, [progress])
 
   const todayISO = new Date().toISOString().slice(0, 10)
+  const isCurrentWeek = weekStart === getWeekStartISO()
 
   const logProgress = async (goal, nextValue) => {
     await logsApi.create({
@@ -93,7 +107,7 @@ export default function App() {
       value: isMetricGoal(goal) ? nextValue : null,
       raw_text: 'ui'
     })
-    await refreshData()
+    await refreshData(weekStart)
   }
 
   const toggleBinary = async goal => {
@@ -112,6 +126,7 @@ export default function App() {
   }
 
   const counts = summarizeGoals(progress?.goals ?? [])
+  const statusContext = getStatusContext(isCurrentWeek, progress?.days_elapsed ?? 7)
 
   return (
     <main>
@@ -154,7 +169,15 @@ export default function App() {
 
       {view === 'progress' && (
         <section>
-          <p>Week start: {weekStart}</p>
+          <label htmlFor="week-selector">Week</label>{' '}
+          <select id="week-selector" value={weekStart} onChange={event => setWeekStart(event.target.value)}>
+            {weekOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p>{statusContext}</p>
           {(progress?.goals ?? []).map(goal => (
             <article key={goal.goal_id}>
               <strong>{goal.goal_title}</strong>
@@ -163,6 +186,7 @@ export default function App() {
                 {goal.completed}/{goal.target} ({goal.percent}%)
               </span>
               <span> — {getStatusBadge(goal)}</span>
+              <p>{getGoalGuidance(goal, isCurrentWeek, progress?.days_elapsed ?? 7)}</p>
             </article>
           ))}
           <div>
