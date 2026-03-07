@@ -62,3 +62,13 @@ class ReminderJob(Base):
     goal_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("goals.id", ondelete="CASCADE"), index=True)
     scheduled_for: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     sent: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class AuthToken(Base):
+    __tablename__ = "auth_tokens"
+
+    email: Mapped[str] = mapped_column(Text, index=True)
+    token_hash: Mapped[str] = mapped_column(Text, primary_key=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
