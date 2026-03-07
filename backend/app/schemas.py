@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -55,6 +55,51 @@ class GoalResponse(BaseModel):
     description: str | None
     is_active: bool
     created_at: datetime
+
+
+class LogCreate(BaseModel):
+    goal_id: UUID
+    date: date
+    value: float | None = None
+    completed: bool = True
+    raw_text: str = "manual"
+
+
+class LogResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    user_id: UUID
+    goal_id: UUID
+    raw_text: str
+    parsed_value: float | None
+    completed: bool
+    confidence: float
+    created_at: datetime
+
+
+class DailyProgressBreakdown(BaseModel):
+    date: date
+    completed: float
+
+
+class WeeklyGoalProgress(BaseModel):
+    goal_id: UUID
+    goal_title: str
+    frequency: str
+    goal_type: str
+    completed: float
+    target: float
+    percent: float
+    on_track: bool
+    daily_breakdown: list[DailyProgressBreakdown]
+
+
+class WeeklyProgressResponse(BaseModel):
+    week_start: date
+    week_end: date
+    days_elapsed: int
+    goals: list[WeeklyGoalProgress]
 
 
 class MessageResponse(BaseModel):

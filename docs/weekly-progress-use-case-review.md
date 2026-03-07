@@ -68,3 +68,13 @@ To support “check my weekly progress and know if I’m on track,” the curren
 1. Add migration if extra columns are needed (e.g., log_date separate from created_at).
 2. Add API metrics/logging for weekly-progress endpoint latency and error rates.
 3. Validate end-to-end with seeded fixtures and one manual QA script covering the use case narrative.
+
+
+## Phase 1 implementation status
+- ✅ Added `POST /logs` and `GET /logs?week_start=YYYY-MM-DD` backend routes for recording and retrieving weekly goal events.
+- ✅ Added `GET /progress/weekly?week_start=YYYY-MM-DD` backend route returning per-goal weekly totals, target, percent, on-track status, and a 7-day breakdown.
+- ✅ Implemented initial semantics in service code:
+  - daily + binary goals target elapsed days in the requested week,
+  - weekly + binary goals target one completion,
+  - metric goals use summed `value`, with daily metrics prorated by elapsed days.
+- ℹ️ The backend is already configured for PostgreSQL by default (`postgresql+psycopg://...`), so Postgres is the correct DB choice for this plan.
