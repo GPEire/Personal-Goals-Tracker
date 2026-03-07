@@ -78,3 +78,15 @@ To support “check my weekly progress and know if I’m on track,” the curren
   - weekly + binary goals target one completion,
   - metric goals use summed `value`, with daily metrics prorated by elapsed days.
 - ℹ️ The backend is already configured for PostgreSQL by default (`postgresql+psycopg://...`), so Postgres is the correct DB choice for this plan.
+
+
+## Phase 2 implementation status
+- ✅ Added centralized progress business logic helpers in `app.services.progress`, including explicit `_is_on_track` evaluation.
+- ✅ Updated weekly boundary handling to honor the requesting user’s timezone when translating `week_start` into UTC query boundaries.
+- ✅ Updated `POST /logs`, `GET /logs`, and `GET /progress/weekly` to use timezone-aware week semantics.
+- ✅ Added backend unit tests for:
+  - daily binary goals mid-week,
+  - weekly binary goals,
+  - count/metric goals,
+  - zero-activity weeks,
+  - timezone-aware weekly boundaries.

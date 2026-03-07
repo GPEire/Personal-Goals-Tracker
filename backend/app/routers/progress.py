@@ -19,7 +19,7 @@ def get_weekly_progress(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> WeeklyProgressResponse:
-    start_dt, end_dt = week_bounds(week_start)
+    start_dt, end_dt = week_bounds(week_start, current_user.timezone)
 
     goals = list(
         db.execute(
@@ -36,7 +36,12 @@ def get_weekly_progress(
         ).scalars()
     )
 
-    weekly_goal_progress = build_weekly_goal_progress(goals=goals, logs=logs, week_start=week_start)
+    weekly_goal_progress = build_weekly_goal_progress(
+        goals=goals,
+        logs=logs,
+        week_start=week_start,
+        user_timezone=current_user.timezone,
+    )
     today = date.today()
     days_elapsed = max(0, min(7, (today - week_start).days + 1))
 

@@ -1,4 +1,5 @@
 from datetime import date, datetime, time, timezone
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -23,6 +24,9 @@ def create_log(
     if not goal:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Goal not found")
 
+    user_tz = ZoneInfo(current_user.timezone)
+    local_midnight = datetime.combine(payload.date, time.min, tzinfo=user_tz)
+
     log = Log(
         user_id=current_user.id,
         goal_id=payload.goal_id,
@@ -30,7 +34,7 @@ def create_log(
         parsed_value=payload.value,
         completed=payload.completed,
         confidence=1.0,
-        created_at=datetime.combine(payload.date, time.min, tzinfo=timezone.utc),
+        created_at=local_midnight.astimezone(timezone.utc),
     )
     db.add(log)
     db.commit()
@@ -44,7 +48,7 @@ def list_logs(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[Log]:
-    week_start_dt, week_end_dt = week_bounds(week_start)
+    week_start_dt, week_end_dt = week_bounds(week_start, current_user.timezone)
     statement = (
         select(Log)
         .where(Log.user_id == current_user.id, Log.created_at >= week_start_dt, Log.created_at < week_end_dt)
