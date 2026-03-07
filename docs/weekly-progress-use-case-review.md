@@ -98,3 +98,10 @@ To support “check my weekly progress and know if I’m on track,” the curren
 - ✅ Replaced static weekly history/summary with backend `GET /progress/weekly` and weekly logs.
 - ✅ Added explicit per-goal status badges: `On track`, `At risk`, and `Behind`.
 - ✅ Added frontend utility tests covering week boundary logic, status badge thresholds, and status rollups.
+
+
+## Phase 4 implementation status
+- ✅ Added a week selector in the progress tab to switch between current and previous week snapshots.
+- ✅ Added per-goal actionable guidance copy (remaining amount and daily pace needed by Sunday for in-progress weeks).
+- ✅ Added explicit projected-vs-final status context for incomplete vs complete weeks in the selected period.
+- ✅ Added frontend utility tests for week selector options, projected/final status messaging, and guidance text generation.
