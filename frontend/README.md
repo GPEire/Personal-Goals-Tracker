@@ -9,7 +9,8 @@ npm run dev
 
 Open the printed local URL (usually `http://localhost:5173`).
 
-Set `VITE_API_BASE_URL` if your backend is not on `http://localhost:8000`.
+By default, the app calls `http://localhost:8000` in development and `/api` in production.
+Set `VITE_API_BASE_URL` to override either environment.
 
 ## Implemented in phase 3
 
