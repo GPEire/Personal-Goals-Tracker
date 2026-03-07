@@ -105,3 +105,11 @@ To support “check my weekly progress and know if I’m on track,” the curren
 - ✅ Added per-goal actionable guidance copy (remaining amount and daily pace needed by Sunday for in-progress weeks).
 - ✅ Added explicit projected-vs-final status context for incomplete vs complete weeks in the selected period.
 - ✅ Added frontend utility tests for week selector options, projected/final status messaging, and guidance text generation.
+
+
+## Phase 5 implementation status
+- ✅ Added lightweight API observability for `GET /progress/weekly`, including in-memory request counting, average latency, and error-rate aggregation.
+- ✅ Added `GET /health/metrics` to expose weekly-progress observability metrics for rollout monitoring.
+- ✅ Added deterministic fixture seeding script (`backend/scripts/seed_weekly_progress_fixture.py`) for repeatable weekly-progress validation data.
+- ✅ Added a manual QA runbook (`docs/phase5-weekly-progress-qa.md`) covering seed, auth, logs, progress, and observability verification steps.
+- ✅ Added tests for observability metric aggregation behavior and zero-request defaults.
