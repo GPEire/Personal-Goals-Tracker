@@ -19,3 +19,21 @@ export async function apiRequest(path, options = {}) {
 
   return response.status === 204 ? null : response.json()
 }
+
+export const authApi = {
+  requestLink: email => apiRequest('/auth/request-link', { method: 'POST', body: JSON.stringify({ email }) }),
+  verify: (email, token) => apiRequest('/auth/verify', { method: 'POST', body: JSON.stringify({ email, token }) })
+}
+
+export const goalsApi = {
+  list: () => apiRequest('/goals')
+}
+
+export const logsApi = {
+  create: payload => apiRequest('/logs', { method: 'POST', body: JSON.stringify(payload) }),
+  listForWeek: weekStart => apiRequest(`/logs?week_start=${weekStart}`)
+}
+
+export const progressApi = {
+  weekly: weekStart => apiRequest(`/progress/weekly?week_start=${weekStart}`)
+}

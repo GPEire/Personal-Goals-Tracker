@@ -90,3 +90,11 @@ To support “check my weekly progress and know if I’m on track,” the curren
   - count/metric goals,
   - zero-activity weeks,
   - timezone-aware weekly boundaries.
+
+## Phase 3 implementation status
+- ✅ Added frontend auth bootstrap for magic-link request and token verification, persisting the JWT in local storage for subsequent API calls.
+- ✅ Replaced static goals with backend-backed `GET /goals` loading.
+- ✅ Wired progress actions to `POST /logs` (binary toggle and metric +1 actions).
+- ✅ Replaced static weekly history/summary with backend `GET /progress/weekly` and weekly logs.
+- ✅ Added explicit per-goal status badges: `On track`, `At risk`, and `Behind`.
+- ✅ Added frontend utility tests covering week boundary logic, status badge thresholds, and status rollups.
