@@ -1,7 +1,4 @@
 from datetime import date, timedelta
-from time import perf_counter
-import logging
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -10,10 +7,8 @@ from app.core.database import get_db
 from app.deps import get_current_user
 from app.models import Goal, Log, User
 from app.schemas import WeeklyProgressResponse
-from app.services.observability import metrics_store
 from app.services.progress import build_weekly_goal_progress, week_bounds
 
-logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/progress", tags=["progress"])
 
@@ -24,54 +19,35 @@ def get_weekly_progress(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> WeeklyProgressResponse:
-    start = perf_counter()
-    failed = False
+    start_dt, end_dt = week_bounds(week_start, current_user.timezone)
 
-    try:
-        start_dt, end_dt = week_bounds(week_start, current_user.timezone)
+    goals = list(
+        db.execute(
+            select(Goal).where(Goal.user_id == current_user.id, Goal.is_active.is_(True)).order_by(Goal.created_at.asc())
+        ).scalars()
+    )
+    logs = list(
+        db.execute(
+            select(Log).where(
+                Log.user_id == current_user.id,
+                Log.created_at >= start_dt,
+                Log.created_at < end_dt,
+            )
+        ).scalars()
+    )
 
-        goals = list(
-            db.execute(
-                select(Goal).where(Goal.user_id == current_user.id, Goal.is_active.is_(True)).order_by(Goal.created_at.asc())
-            ).scalars()
-        )
-        logs = list(
-            db.execute(
-                select(Log).where(
-                    Log.user_id == current_user.id,
-                    Log.created_at >= start_dt,
-                    Log.created_at < end_dt,
-                )
-            ).scalars()
-        )
+    weekly_goal_progress = build_weekly_goal_progress(
+        goals=goals,
+        logs=logs,
+        week_start=week_start,
+        user_timezone=current_user.timezone,
+    )
+    today = date.today()
+    days_elapsed = max(0, min(7, (today - week_start).days + 1))
 
-        weekly_goal_progress = build_weekly_goal_progress(
-            goals=goals,
-            logs=logs,
-            week_start=week_start,
-            user_timezone=current_user.timezone,
-        )
-        today = date.today()
-        days_elapsed = max(0, min(7, (today - week_start).days + 1))
-
-        return WeeklyProgressResponse(
-            week_start=week_start,
-            week_end=week_start + timedelta(days=6),
-            days_elapsed=days_elapsed,
-            goals=weekly_goal_progress,
-        )
-    except Exception:
-        failed = True
-        raise
-    finally:
-        latency_ms = round((perf_counter() - start) * 1000, 2)
-        metrics_store.record_weekly_progress(latency_ms=latency_ms, failed=failed)
-        logger.info(
-            "weekly_progress_request",
-            extra={
-                "user_id": str(current_user.id),
-                "week_start": week_start.isoformat(),
-                "latency_ms": latency_ms,
-                "failed": failed,
-            },
-        )
+    return WeeklyProgressResponse(
+        week_start=week_start,
+        week_end=week_start + timedelta(days=6),
+        days_elapsed=days_elapsed,
+        goals=weekly_goal_progress,
+    )

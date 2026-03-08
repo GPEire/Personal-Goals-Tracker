@@ -1,27 +1,29 @@
-from app.services.observability import InMemoryMetricsStore
+from app.services.observability import REQUEST_ID_HEADER, observed_endpoint, resolve_request_id
 
 
-def test_weekly_progress_metrics_aggregate_latency_and_error_rate():
-    metrics = InMemoryMetricsStore()
+def test_resolve_request_id_uses_existing_header_value():
+    request_id = resolve_request_id("trace-123")
 
-    metrics.record_weekly_progress(latency_ms=120.0, failed=False)
-    metrics.record_weekly_progress(latency_ms=80.0, failed=True)
-    metrics.record_weekly_progress(latency_ms=100.0, failed=False)
-
-    snapshot = metrics.snapshot()
-
-    assert snapshot["total_requests"] == 3
-    assert snapshot["failed_requests"] == 1
-    assert snapshot["avg_latency_ms"] == 100.0
-    assert snapshot["error_rate"] == 33.33
+    assert request_id == "trace-123"
 
 
-def test_weekly_progress_metrics_defaults_to_zero_without_requests():
-    snapshot = InMemoryMetricsStore().snapshot()
+def test_resolve_request_id_generates_uuid_when_header_missing():
+    request_id = resolve_request_id(None)
 
-    assert snapshot == {
-        "total_requests": 0,
-        "failed_requests": 0,
-        "avg_latency_ms": 0.0,
-        "error_rate": 0.0,
-    }
+    assert len(request_id) == 32
+    assert request_id.isalnum()
+
+
+def test_observed_endpoint_tracks_required_routes():
+    assert observed_endpoint("/progress/weekly") == "/progress/weekly"
+    assert observed_endpoint("/auth/request-link") == "/auth/*"
+    assert observed_endpoint("/auth/verify") == "/auth/*"
+    assert observed_endpoint("/goals") == "/goals"
+    assert observed_endpoint("/goals/123") == "/goals"
+    assert observed_endpoint("/logs") == "/logs"
+    assert observed_endpoint("/logs/123") == "/logs"
+
+
+def test_observed_endpoint_skips_untracked_paths():
+    assert observed_endpoint("/health") is None
+    assert REQUEST_ID_HEADER == "X-Request-ID"

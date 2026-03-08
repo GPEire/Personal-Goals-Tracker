@@ -46,15 +46,27 @@ Expected high-level outcomes from `/progress/weekly`:
 - `Workout` (weekly metric target 5): completed value = 3.
 - `Publish weekly update` (weekly binary): on-track once completed log exists.
 
-## 4) Validate observability counters
+## 4) Validate observability logs and request correlation in deployed environment
+Use your hosting provider logs (for example: Vercel Runtime Logs / CloudWatch / Datadog) and filter for `endpoint_request_metric`.
+
 ```bash
-curl -s http://localhost:8000/health/metrics
+REQ_ID="qa-phase5-$(date +%s)"
+
+curl -s "http://localhost:8000/progress/weekly?week_start=2026-01-05" \
+  -H "Authorization: Bearer $JWT" \
+  -H "X-Request-ID: $REQ_ID"
 ```
-Expected:
-- `weekly_progress.total_requests` increments after `/progress/weekly` calls.
-- `avg_latency_ms` and `error_rate` are present.
+
+Expected in deployed logs for the same `request_id`:
+- `event=endpoint_request_metric`
+- `endpoint=/progress/weekly`
+- `latency_ms`, `status_code`, and `failed` fields are present
+- Response includes `X-Request-ID` header matching the submitted value
+
+Repeat with calls to `/auth/request-link`, `/goals`, and `/logs` to confirm endpoint-level metric logs are emitted for all tracked route groups.
 
 ## 5) Narrative sign-off checklist
 - [ ] User can fetch persisted logs for a selected week.
 - [ ] Weekly progress endpoint returns per-goal target, completion, percent, and on-track signal.
-- [ ] Endpoint metrics surface request count, latency, and failure rate for weekly-progress.
+- [ ] Endpoint metrics are visible in deployed structured logs with latency/status/error fields (not process memory).
+- [ ] `X-Request-ID` is accepted and echoed so requests can be correlated in logs.

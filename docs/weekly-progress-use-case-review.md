@@ -108,8 +108,8 @@ To support “check my weekly progress and know if I’m on track,” the curren
 
 
 ## Phase 5 implementation status
-- ✅ Added lightweight API observability for `GET /progress/weekly`, including in-memory request counting, average latency, and error-rate aggregation.
-- ✅ Added `GET /health/metrics` to expose weekly-progress observability metrics for rollout monitoring.
+- ✅ Migrated API observability to serverless-safe structured logs with endpoint-level latency, status, and failure fields.
+- ✅ Added request-id correlation (`X-Request-ID`) so deployed log records can be traced across services.
 - ✅ Added deterministic fixture seeding script (`backend/scripts/seed_weekly_progress_fixture.py`) for repeatable weekly-progress validation data.
 - ✅ Added a manual QA runbook (`docs/phase5-weekly-progress-qa.md`) covering seed, auth, logs, progress, and observability verification steps.
-- ✅ Added tests for observability metric aggregation behavior and zero-request defaults.
+- ✅ Added tests for request-id and endpoint-observation routing behavior used by log-based observability.
