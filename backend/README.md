@@ -100,6 +100,6 @@ Configure these in the **backend Vercel project**:
 - Goal CRUD (`/goals`)
 - Goal logs (`POST /logs`, `GET /logs?week_start=YYYY-MM-DD`)
 - Weekly progress summaries (`GET /progress/weekly?week_start=YYYY-MM-DD`)
-- Weekly progress observability metrics (`GET /health/metrics`)
+- Log-based observability metrics for `/progress/weekly`, `/auth/*`, `/goals`, and `/logs` (via structured runtime logs with `X-Request-ID` correlation)
 - Deployment preflight check (`GET /health/preflight`)
 - Postgres schema via Alembic migration

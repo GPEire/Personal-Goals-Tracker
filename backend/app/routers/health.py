@@ -8,8 +8,6 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.database import engine
-from app.services.observability import metrics_store
-
 router = APIRouter(tags=["health"])
 
 
@@ -17,10 +15,6 @@ router = APIRouter(tags=["health"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
-
-@router.get("/health/metrics")
-def health_metrics() -> dict[str, dict[str, float | int]]:
-    return {"weekly_progress": metrics_store.snapshot()}
 
 
 @router.get("/health/preflight")

@@ -2,10 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
+from app.middleware.observability import RequestObservabilityMiddleware
 from app.routers import auth, goals, health, logs, progress
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name)
+
+app.add_middleware(RequestObservabilityMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
