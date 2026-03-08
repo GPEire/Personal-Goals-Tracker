@@ -68,6 +68,47 @@ class FakeSession:
         return None
 
 
+class FakeEmailSender:
+    def __init__(self):
+        self.sent = []
+
+    def send_magic_link(self, *, recipient_email: str, magic_link: str, token: str):
+        self.sent.append({"recipient_email": recipient_email, "magic_link": magic_link, "token": token})
+
+
+def test_request_link_returns_dev_token_only_for_local_environment():
+    db = FakeSession()
+    original_env = auth_router.settings.environment
+
+    try:
+        auth_router.settings.environment = "development"
+        response = request_magic_link(AuthLinkRequest(email="local@example.com"), db)
+    finally:
+        auth_router.settings.environment = original_env
+
+    assert response.message.startswith("Magic link token generated for development: ")
+
+
+def test_request_link_sends_email_for_non_local_environments():
+    db = FakeSession()
+    fake_sender = FakeEmailSender()
+    original_env = auth_router.settings.environment
+    original_sender = auth_router.email_sender
+
+    try:
+        auth_router.settings.environment = "production"
+        auth_router.email_sender = fake_sender
+        response = request_magic_link(AuthLinkRequest(email="prod@example.com"), db)
+    finally:
+        auth_router.settings.environment = original_env
+        auth_router.email_sender = original_sender
+
+    assert response.message == "Check your email for a sign-in link and code."
+    assert len(fake_sender.sent) == 1
+    assert fake_sender.sent[0]["recipient_email"] == "prod@example.com"
+    assert fake_sender.sent[0]["magic_link"].startswith(auth_router.settings.frontend_url)
+
+
 def test_verify_valid_token_returns_access_token():
     db = FakeSession()
 
