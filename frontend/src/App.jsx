@@ -9,6 +9,15 @@ import {
   isMetricGoal,
   summarizeGoals
 } from './utils/progress'
+import { buildGoalPayload, parseReminderTimes, validateGoalForm } from './utils/goals'
+
+const initialGoalForm = {
+  title: '',
+  type: 'habit',
+  frequency: 'daily',
+  target: '',
+  reminders: ''
+}
 
 function AuthPanel({ onAuthenticated }) {
   const [email, setEmail] = useState('')
@@ -63,6 +72,10 @@ export default function App() {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [goalForm, setGoalForm] = useState(initialGoalForm)
+  const [editingGoalId, setEditingGoalId] = useState('')
+  const [goalError, setGoalError] = useState('')
+  const [goalMessage, setGoalMessage] = useState('')
 
   const weekOptions = useMemo(() => getWeekSelectorOptions(), [])
   const [weekStart, setWeekStart] = useState(() => getWeekStartISO())
@@ -122,6 +135,85 @@ export default function App() {
     await logProgress(goal, current + 1)
   }
 
+  const updateFormField = (field, value) => {
+    setGoalForm(current => ({ ...current, [field]: value }))
+  }
+
+  const resetGoalForm = () => {
+    setGoalForm(initialGoalForm)
+    setEditingGoalId('')
+  }
+
+  const submitGoalForm = async event => {
+    event.preventDefault()
+    setGoalError('')
+    setGoalMessage('')
+
+    const validationError = validateGoalForm(goalForm)
+    if (validationError) {
+      setGoalError(validationError)
+      return
+    }
+
+    try {
+      const payload = buildGoalPayload(goalForm)
+      if (editingGoalId) {
+        await goalsApi.update(editingGoalId, payload)
+        setGoalMessage('Goal updated.')
+      } else {
+        await goalsApi.create(payload)
+        setGoalMessage('Goal created.')
+      }
+      resetGoalForm()
+      await refreshData(weekStart)
+    } catch (err) {
+      setGoalError(err.message)
+    }
+  }
+
+  const startEditingGoal = goal => {
+    setGoalError('')
+    setGoalMessage('')
+    setEditingGoalId(goal.id)
+    setGoalForm({
+      title: goal.title,
+      type: goal.type,
+      frequency: goal.frequency,
+      target: goal.target_value == null ? '' : String(goal.target_value),
+      reminders: (goal.reminder_times ?? []).join(', ')
+    })
+  }
+
+  const archiveGoal = async goal => {
+    setGoalError('')
+    setGoalMessage('')
+    try {
+      await goalsApi.update(goal.id, { is_active: false })
+      setGoalMessage(`Archived "${goal.title}".`)
+      if (editingGoalId === goal.id) {
+        resetGoalForm()
+      }
+      await refreshData(weekStart)
+    } catch (err) {
+      setGoalError(err.message)
+    }
+  }
+
+  const removeGoal = async goal => {
+    setGoalError('')
+    setGoalMessage('')
+    try {
+      await goalsApi.delete(goal.id)
+      setGoalMessage(`Deleted "${goal.title}".`)
+      if (editingGoalId === goal.id) {
+        resetGoalForm()
+      }
+      await refreshData(weekStart)
+    } catch (err) {
+      setGoalError(err.message)
+    }
+  }
+
   if (!isAuthed) {
     return <AuthPanel onAuthenticated={() => setIsAuthed(true)} />
   }
@@ -140,6 +232,50 @@ export default function App() {
         ))}
       </nav>
 
+      <section>
+        <h2>{editingGoalId ? 'Edit goal' : 'Create goal'}</h2>
+        <form onSubmit={submitGoalForm}>
+          <input
+            aria-label="Goal title"
+            value={goalForm.title}
+            onChange={event => updateFormField('title', event.target.value)}
+            placeholder="Goal title"
+          />
+          <select aria-label="Goal type" value={goalForm.type} onChange={event => updateFormField('type', event.target.value)}>
+            <option value="habit">habit</option>
+            <option value="metric">metric</option>
+            <option value="project">project</option>
+          </select>
+          <input
+            aria-label="Goal frequency"
+            value={goalForm.frequency}
+            onChange={event => updateFormField('frequency', event.target.value)}
+            placeholder="daily / weekly"
+          />
+          <input
+            aria-label="Goal target"
+            type="number"
+            min="0"
+            step="1"
+            disabled={goalForm.type !== 'metric'}
+            value={goalForm.target}
+            onChange={event => updateFormField('target', event.target.value)}
+            placeholder="Target value"
+          />
+          <input
+            aria-label="Goal reminders"
+            value={goalForm.reminders}
+            onChange={event => updateFormField('reminders', event.target.value)}
+            placeholder="09:00, 18:30"
+          />
+          <button type="submit">{editingGoalId ? 'Save changes' : 'Create goal'}</button>
+          {editingGoalId && <button onClick={resetGoalForm}>Cancel edit</button>}
+        </form>
+        <p>Reminder values saved: {parseReminderTimes(goalForm.reminders).length}</p>
+        {goalMessage && <p>{goalMessage}</p>}
+        {goalError && <p role="alert">{goalError}</p>}
+      </section>
+
       {loading && <p>Loading...</p>}
       {error && <p role="alert">{error}</p>}
 
@@ -152,16 +288,26 @@ export default function App() {
               <article key={goal.id}>
                 <strong>{goal.title}</strong>
                 <span> ({goal.frequency}) </span>
+                <span>{goal.is_active ? 'active' : 'archived'}</span>
                 {isMetricGoal(goal) ? (
                   <>
                     <span>
                       {todayValue}/{goal.target_value ?? 0}
                     </span>
-                    <button onClick={() => incrementMetric(goal)}>+1</button>
+                    <button onClick={() => incrementMetric(goal)} disabled={!goal.is_active}>
+                      +1
+                    </button>
                   </>
                 ) : (
-                  <button onClick={() => toggleBinary(goal)}>{todayValue > 0 ? 'Done' : 'Mark done'}</button>
+                  <button onClick={() => toggleBinary(goal)} disabled={!goal.is_active}>
+                    {todayValue > 0 ? 'Done' : 'Mark done'}
+                  </button>
                 )}
+                <button onClick={() => startEditingGoal(goal)}>Edit</button>
+                <button onClick={() => archiveGoal(goal)} disabled={!goal.is_active}>
+                  Archive
+                </button>
+                <button onClick={() => removeGoal(goal)}>Delete</button>
               </article>
             )
           })}

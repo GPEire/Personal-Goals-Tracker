@@ -1,5 +1,5 @@
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:8000')
+const env = import.meta.env ?? {}
+const API_BASE = env.VITE_API_BASE_URL || (env.PROD ? '/api' : 'http://localhost:8000')
 
 export async function apiRequest(path, options = {}) {
   const token = localStorage.getItem('auth_token')
@@ -27,7 +27,10 @@ export const authApi = {
 }
 
 export const goalsApi = {
-  list: () => apiRequest('/goals')
+  list: () => apiRequest('/goals'),
+  create: payload => apiRequest('/goals', { method: 'POST', body: JSON.stringify(payload) }),
+  update: (goalId, payload) => apiRequest(`/goals/${goalId}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  delete: goalId => apiRequest(`/goals/${goalId}`, { method: 'DELETE' })
 }
 
 export const logsApi = {
