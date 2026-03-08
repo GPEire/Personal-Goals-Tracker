@@ -45,9 +45,10 @@ function AuthPanel({ onAuthenticated }) {
     <section>
       <h1>Sign in</h1>
       <input aria-label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
-      <button onClick={requestLink}>Request magic link</button>
-      <input aria-label="Token" value={token} onChange={e => setToken(e.target.value)} placeholder="Paste token" />
-      <button onClick={verify}>Verify</button>
+      <button onClick={requestLink}>Email me a sign-in link</button>
+      <p>After requesting, check your email for a sign-in link and one-time code.</p>
+      <input aria-label="Token" value={token} onChange={e => setToken(e.target.value)} placeholder="Enter one-time code" />
+      <button onClick={verify}>Sign in with code</button>
       {message && <p>{message}</p>}
       {error && <p role="alert">{error}</p>}
     </section>

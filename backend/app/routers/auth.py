@@ -11,9 +11,12 @@ from app.core.database import get_db
 from app.core.security import create_access_token
 from app.models import AuthToken, User
 from app.schemas import AuthLinkRequest, AuthResponse, AuthVerifyRequest, MessageResponse
+from app.services.email import EmailDeliveryError, get_email_sender
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
+email_sender = get_email_sender(settings)
+LOCAL_ENVIRONMENTS = {"local", "development", "test"}
 
 
 def _hash_token(token: str) -> str:
@@ -36,10 +39,20 @@ def request_magic_link(payload: AuthLinkRequest, db: Session = Depends(get_db)) 
     db.add(auth_token)
     db.commit()
 
-    # In production this token would be emailed.
-    if settings.environment == "production":
-        return MessageResponse(message="Magic link sent.")
-    return MessageResponse(message=f"Magic link token generated for development: {token}")
+    magic_link = f"{settings.frontend_url}/?email={payload.email}&token={token}"
+
+    if settings.environment in LOCAL_ENVIRONMENTS:
+        return MessageResponse(message=f"Magic link token generated for development: {token}")
+
+    try:
+        email_sender.send_magic_link(recipient_email=payload.email, magic_link=magic_link, token=token)
+    except EmailDeliveryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Unable to send sign-in email right now. Please try again.",
+        ) from exc
+
+    return MessageResponse(message="Check your email for a sign-in link and code.")
 
 
 @router.post("/verify", response_model=AuthResponse)
