@@ -49,6 +49,25 @@ If routing/build behavior is inconsistent in your Vercel team setup, split into 
 
 This isolates build pipelines and avoids cross-project routing edge cases.
 
+### Required Vercel environment variables
+
+When deploying with two Vercel projects, configure env vars explicitly per project:
+
+- **Backend project**
+  - `DATABASE_URL`
+  - `JWT_SECRET`
+  - `ENVIRONMENT`
+  - `FRONTEND_URL` (production frontend URL)
+  - `ALLOWED_ORIGINS` (comma-separated list including both production and preview frontend domains)
+    - Example: `https://tracker.vercel.app,https://tracker-git-feature-team.vercel.app`
+  - `EMAIL_PROVIDER`, `EMAIL_API_KEY`, `EMAIL_FROM` (if using Resend)
+
+- **Frontend project**
+  - `VITE_API_BASE_URL` (point prod frontend to prod backend API, and preview frontend to preview backend API)
+
+`localhost` origins are added automatically only in backend `development`/`local`/`test` environments and should not be included in deployed `ALLOWED_ORIGINS`.
+
+
 
 ## Backend production migrations
 

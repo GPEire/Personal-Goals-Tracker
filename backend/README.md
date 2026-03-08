@@ -62,7 +62,10 @@ Set these environment variables in `backend/.env`:
 - `EMAIL_PROVIDER`: `console` or `resend`.
 - `EMAIL_API_KEY`: required when `EMAIL_PROVIDER=resend`.
 - `EMAIL_FROM`: required when `EMAIL_PROVIDER=resend` (must be a verified sender in Resend).
-- `FRONTEND_URL`: used to build the sign-in link included in the email.
+- `FRONTEND_URL`: used to build the sign-in link included in the email and as a CORS fallback when `ALLOWED_ORIGINS` is unset.
+- `ALLOWED_ORIGINS`: optional comma-separated CORS allowlist for deployed environments (for example production + preview frontend domains).
+  - Example: `https://your-frontend.vercel.app,https://your-frontend-git-feature-team.vercel.app`
+  - `localhost` origins are automatically added only when `ENVIRONMENT` is `development`, `local`, or `test`.
 
 ### Resend quick start
 
@@ -80,6 +83,17 @@ DATABASE_URL=postgresql+psycopg://<user>:<pass>@<host>:5432/<db>?sslmode=require
 ```
 
 4. Call `POST /auth/request-link` with the user's email.
+
+### Vercel backend project env (required)
+
+Configure these in the **backend Vercel project**:
+
+- `DATABASE_URL` (with `sslmode=require` in production/preview).
+- `JWT_SECRET`.
+- `ENVIRONMENT` (`production` for prod deploys, `staging`/`production` for previews as desired).
+- `FRONTEND_URL` (production frontend domain).
+- `ALLOWED_ORIGINS` (comma-separated production + preview frontend domains).
+- `EMAIL_PROVIDER`, `EMAIL_API_KEY`, `EMAIL_FROM` (when using Resend).
 
 ## Iteration 1 modules
 - Auth magic-link development flow (`/auth/request-link`, `/auth/verify`)
