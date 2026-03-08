@@ -48,3 +48,8 @@ If routing/build behavior is inconsistent in your Vercel team setup, split into 
    - Expose API under its own domain (for example `https://tracker-api.vercel.app`).
 
 This isolates build pipelines and avoids cross-project routing edge cases.
+
+
+## Backend production migrations
+
+Before every production deploy, run `backend/scripts/predeploy_migrate.sh` with the production `DATABASE_URL` (including SSL settings such as `sslmode=require`) so schema upgrades are repeatable and gated before rollout. See `backend/README.md` for rollback and preflight health check details.
