@@ -72,3 +72,30 @@ When deploying with two Vercel projects, configure env vars explicitly per proje
 ## Backend production migrations
 
 Before every production deploy, run `backend/scripts/predeploy_migrate.sh` with the production `DATABASE_URL` (including SSL settings such as `sslmode=require`) so schema upgrades are repeatable and gated before rollout. See `backend/README.md` for rollback and preflight health check details.
+
+
+## CI and branch protection
+
+Automated pre-deploy checks are defined in `.github/workflows/ci.yml` and should be required for merges to `main`:
+
+- `backend-unit-tests` (runs `pytest backend/tests`)
+- `frontend-tests-and-build` (runs `npm run test` and `npm run build` in `frontend`)
+
+### Configure required status checks (GitHub)
+
+1. Open **Settings → Branches → Add rule** for `main` (or edit existing rule).
+2. Enable **Require a pull request before merging**.
+3. Enable **Require status checks to pass before merging**.
+4. Select required checks:
+   - `backend-unit-tests`
+   - `frontend-tests-and-build`
+5. Save the rule.
+
+## Definition of Done (MVP)
+
+- [ ] Backend unit tests pass (`pytest backend/tests`).
+- [ ] Frontend tests pass (`npm run test`).
+- [ ] Frontend production build succeeds (`npm run build`).
+- [ ] CI workflow passes on the pull request.
+- [ ] Branch protection requires CI checks before merge/deploy.
+- [ ] Migrations/predeploy checks are validated for backend changes.
