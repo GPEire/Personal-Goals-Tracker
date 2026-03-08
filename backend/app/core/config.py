@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_exp_minutes: int = 60 * 24 * 7
     frontend_url: str = "http://localhost:5173"
+    allowed_origins: str = ""
     email_provider: str = "console"
     email_api_key: str = ""
     email_from: str = ""
@@ -52,6 +53,25 @@ class Settings(BaseSettings):
             raise ValueError("EMAIL_FROM is required when EMAIL_PROVIDER is resend")
 
         return self
+
+    @property
+    def cors_allowed_origins(self) -> list[str]:
+        origins: list[str] = []
+        if self.allowed_origins:
+            origins.extend(origin.strip() for origin in self.allowed_origins.split(",") if origin.strip())
+
+        if not origins:
+            origins.append(self.frontend_url)
+
+        if self.environment.lower() in {"development", "local", "test"}:
+            origins.extend(["http://localhost:5173", "http://127.0.0.1:5173"])
+
+        deduped_origins = list(dict.fromkeys(origins))
+        invalid_origins = [origin for origin in deduped_origins if not origin.startswith(("http://", "https://"))]
+        if invalid_origins:
+            raise ValueError("ALLOWED_ORIGINS entries must be fully-qualified HTTP(S) origins")
+
+        return deduped_origins
 
 
 @lru_cache
