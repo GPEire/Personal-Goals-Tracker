@@ -19,7 +19,7 @@
     },
     {
       "src": "^/api/(.*)$",
-      "dest": "backend/app/main.py/$1"
+      "dest": "backend/app/main.py"
     },
     {
       "src": "^/(.*)$",
